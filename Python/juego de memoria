@@ -1,0 +1,154 @@
+# Bibliotecas
+import random
+
+# Crear una lista con las letras del alfabeto
+letras = [chr(i) for i in range(ord('A'), ord('Z') + 1)]
+
+# Crear una lista con 18 letras aleatorias
+letras_aleatorias = random.sample(letras, 18)
+
+# Duplicar la lista para tener 36 letras
+letras_duplicadas = letras_aleatorias * 2
+
+# Mezclar la lista
+random.shuffle(letras_duplicadas)
+
+# Crear el tablero de cartas ocultas con una list comprehension
+cartas_ocultas = [['*' for _ in range(6)] for _ in range(6)]
+
+# Crear el tablero de cartas reveladas con otra list comprehension
+cartas_reveladas = [letras_duplicadas[i:i+6] for i in range(0, len(letras_duplicadas), 6)]
+
+# Función para generar el tablero en la pantalla
+def generar_tablero(tablero):
+  # Imprimir los números de las columnas
+  print("   ", end="")
+  for i in range(len(tablero[0])):
+    print("{:>3}".format(i+1), end="")
+  print()
+  # Imprimir los números y los elementos de las filas
+  for i, fila in enumerate(tablero):
+    print("{:>3}".format(i+1), end="")
+    for elemento in fila:
+      print("{:>3}".format(elemento), end="")
+    print()
+
+# Explicación de las reglas
+print("¡Bienvenido al juego de memoria!")
+print("El objetivo del juego es encontrar todos los pares de cartas iguales.")
+print("En cada turno, selecciona dos cartas escribiendo su fila y columna.")
+print("Si las cartas son iguales, se quedarán destapadas; de lo contrario, se volverán a tapar.")
+print("El juego termina cuando todas las cartas estén destapadas.")
+print("Trata de completar el juego en la menor cantidad de turnos posibles.")
+
+# Pide al jugador que confirme que entendió las reglas
+input("Presiona Enter para comenzar...")
+
+turno = 0
+puntos = 0
+
+# Bucle principal del juego
+while cartas_ocultas != cartas_reveladas:
+  turno += 1
+  generar_tablero(cartas_ocultas)
+
+  # Entrada del jugador para seleccionar la primera carta
+  fila1 = int(input("Turno {}: Selecciona una fila (1-6): ".format(turno)))
+  while fila1 < 1 or fila1 > 6:
+    print("La fila debe estar entre 1 y 6.")
+    fila1 = int(input("Selecciona una fila (1-6): "))
+  fila1 -= 1
+
+  columna1 = int(input("Selecciona una columna (1-6): "))
+  while columna1 < 1 or columna1 > 6:
+    print("La columna debe estar entre 1 y 6.")
+    columna1 = int(input("Selecciona una columna (1-6): "))
+  columna1 -= 1
+
+  # Verificar si la carta ya está destapada
+  while cartas_ocultas[fila1][columna1] != '*':
+    print("Ya se destapó, ingresa otra coordenada")
+    fila1 = int(input("Selecciona una fila (1-6): "))
+    while fila1 < 1 or fila1 > 6:
+      print("La fila debe estar entre 1 y 6.")
+      fila1 = int(input("Selecciona una fila (1-6): "))
+    fila1 -= 1
+
+    columna1 = int(input("Selecciona una columna (1-6): "))
+    while columna1 < 1 or columna1 > 6:
+      print("La columna debe estar entre 1 y 6.")
+      columna1 = int(input("Selecciona una columna (1-6): "))
+    columna1 -= 1
+
+  # Mostrar la carta seleccionada
+  print(cartas_reveladas[fila1][columna1])
+
+  # Entrada del jugador para seleccionar la segunda carta
+  fila2 = int(input("Escoge tu segunda carta. Selecciona una fila (1-6): "))
+  while fila2 < 1 or fila2 > 6:
+    print("La fila debe estar entre 1 y 6.")
+    fila2 = int(input("Escoge tu segunda carta. Selecciona una fila (1-6): "))
+  fila2 -= 1
+
+  columna2 = int(input("Escoge tu segunda carta. Selecciona una columna (1-6): "))
+  while columna2 < 1 or columna2 > 6:
+    print("La columna debe estar entre 1 y 6.")
+    columna2 = int(input("Escoge tu segunda carta. Selecciona una columna (1-6): "))
+  columna2 -= 1
+
+  # Verificar si la segunda carta ya está destapada
+  while cartas_ocultas[fila2][columna2] != '*':
+    print("Ya se destapó, ingresa otra coordenada")
+    fila2 = int(input("Escoge tu segunda carta. Selecciona una fila (1-6): "))
+    while fila2 < 1 or fila2 > 6:
+      print("La fila debe estar entre 1 y 6.")
+      fila2 = int(input("Escoge tu segunda carta. Selecciona una fila (1-6): "))
+    fila2 -= 1
+
+    columna2 = int(input("Escoge tu segunda carta. Selecciona una columna (1-6): "))
+    while columna2 < 1 or columna2 > 6:
+      print("La columna debe estar entre 1 y 6.")
+      columna2 = int(input("Escoge tu segunda carta. Selecciona una columna (1-6): "))
+    columna2 -= 1
+
+  # Verificar si la coordenada de la segunda carta es igual a la primera
+  while fila1 == fila2 and columna1 == columna2:
+    print("No puedes repetir la misma carta, ingresa otra coordenada")
+    fila2 = int(input("Escoge tu segunda carta. Selecciona una fila (1-6): "))
+    while fila2 < 1 or fila2 > 6:
+      print("La fila debe estar entre 1 y 6.")
+      fila2 = int(input("Escoge tu segunda carta. Selecciona una fila (1-6): "))
+    fila2 -= 1
+
+    columna2 = int(input("Escoge tu segunda carta. Selecciona una columna (1-6): "))
+    while columna2 < 1 or columna2 > 6:
+      print("La columna debe estar entre 1 y 6.")
+      columna2 = int(input(
+        "Escoge tu segunda carta. Selecciona una columna (1-6): "))
+    columna2 -= 1
+
+  # Mostrar la segunda carta seleccionada
+  print(cartas_reveladas[fila2][columna2])
+
+  # Actualizar el tablero con las cartas seleccionadas
+  cartas_ocultas[fila1][columna1] = str(cartas_reveladas[fila1][columna1])
+  cartas_ocultas[fila2][columna2] = str(cartas_reveladas[fila2][columna2])
+
+  # Verificar si las cartas son iguales
+  if cartas_reveladas[fila1][columna1] != cartas_reveladas[fila2][columna2]:
+    cartas_ocultas[fila1][columna1] = '*'
+    cartas_ocultas[fila2][columna2] = '*'
+
+# Calcular la puntuación final del jugador
+puntaje_maximo = 100  # Puedes ajustar este valor según tus reglas
+puntos = max(puntaje_maximo - turno, 0)  # Cuantos más turnos tarde, menos puntos
+
+# Mostrar el resultado del juego
+print("\n¡Felicidades! Has ganado el juego de memoria en {} turnos.".format(turno))
+print("Puntuación: {} puntos".format(puntos))
+
+# Créditos del juego
+print("\nDesarrollado por:")
+print("#Ari Emilio Núñez Menéndez A01752718")
+print("#Andrés Huerta Robinson A00838626")
+print("\nAgradecimientos especiales al Profesor Edgar Covantes Osuna")

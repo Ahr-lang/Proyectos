@@ -1,0 +1,143 @@
+
+#A00838626 Andres Huerta Robinson
+if (!requireNamespace("ape", quietly = TRUE)) install.packages("ape")
+if (!requireNamespace("phangorn", quietly = TRUE)) install.packages("phangorn")
+if (!requireNamespace("phytools", quietly = TRUE)) install.packages("phytools")
+if (!requireNamespace("geiger", quietly = TRUE)) install.packages("geiger")
+if (!requireNamespace("rentrez", quietly = TRUE)) install.packages("rentrez")
+if (!requireNamespace("Biostrings", quietly = TRUE)) BiocManager::install("Biostrings")
+if (!requireNamespace("seqinr", quietly = TRUE)) install.packages("seqinr")
+if (!requireNamespace("adegenet", quietly = TRUE)) install.packages("adegenet")
+if (!requireNamespace("tidyr", quietly = TRUE)) install.packages("tidyr")
+if (!requireNamespace("ggtree", quietly = TRUE)) BiocManager::install("ggtree")
+if (!requireNamespace("DECIPHER", quietly = TRUE)) BiocManager::install("DECIPHER")
+if (!requireNamespace("viridis", quietly = TRUE)) install.packages("viridis")
+if (!requireNamespace("ggplot2", quietly = TRUE)) install.packages("ggplot2")
+if (!requireNamespace("ggmsa", quietly = TRUE)) install.packages("ggmsa")
+if (!requireNamespace("dplyr", quietly = TRUE)) install.packages("dplyr")
+
+
+library(ape)
+library(phangorn)
+library(phytools)
+library(geiger)
+library(rentrez)
+library(Biostrings)
+library(seqinr)
+library(adegenet)
+library(tidyr)  # Añadir esta línea para cargar tidyr
+library(ggtree)
+library(DECIPHER)
+library(viridis)
+library(ggplot2) #forma parte de las paqueterias que comprenden el "nucleo principal" de tidyverse
+library(ggmsa)
+library(dplyr)
+library(adegenet)
+#Para esta seccion del proyecto, analizare la proteina N, osea la proteina fosfoproteína nucleocápside.
+#Esta proteina  del virus desempeña roles esenciales en la replicación del ARN, el ensamblaje de nuevas partículas virales, y manipula las defensas celulares para favorecer la infección(Li et al., 2020).
+#La escogi debido a que me intereso su papel como la estructura de su ARN, pero tambien el que de ella dependa pasar la replicacion, osea no la hace como tal pero su rol es mas como el de guardar y mandar los datos nesecarios.
+
+virus <-c("43740575","OK436302","PP107439.1","OL461456","PP518928","PP298099.1","OQ083189.1") #concección con NCBI para obtener archivos Genebank a partir del numero de acceso de las secuencias de interés.
+virus_sequences<- ape::read.GenBank(virus)
+write.dna(virus_sequences, file = "virus_sequences.fasta", format = "fasta")
+fasta <- readDNAStringSet("virus_sequences.fasta", format = "fasta")
+
+
+subseqs <- DNAStringSet(list(
+  fasta[[1]],  # Incluir la secuencia completa de la primera, asumiendo que no se desea recortar
+  fasta[[2]][28235:29494],
+  fasta[[3]][28167:29417],
+  fasta[[4]][28193:29452],
+  fasta[[5]][28226:29485],
+  fasta[[6]][28188:29447],
+  fasta[[7]][28249:29508]
+))
+
+# Asignar nombres específicos a las subsecuencias
+names(subseqs) <- c("wuhan","epsilon_OK436302", "omicron_PP107439.1", "alpha_OL461456", "beta_PP518928", "gamma_PP298099.1", "delta_OQ083189.1")
+
+# Guardar las subsecuencias en un nuevo archivo FASTA
+writeXStringSet(subseqs, filepath = "virus_sequences.fasta", format = "fasta")
+calculate_nucleotide_frequencies <- function(sequence) {
+  bases <- as.character(sequence)
+  freq <- table(strsplit(bases, ""))
+  return(as.data.frame(freq))
+}
+fasta <- readDNAStringSet("virus_sequences.fasta", format = "fasta")
+attributes(fasta)
+calculate_gc_content <- function(sequence) {
+  gc_count <- sum(letterFrequency(sequence, letters = c("G", "C"), as.prob = FALSE))
+  total_bases <- length(as.character(sequence))
+  return((gc_count / total_bases) * 100)
+}
+gc_contents <- sapply(fasta, calculate_gc_content)
+gc_data <- data.frame(Virus = names(fasta), GC_Content = gc_contents)
+ggplot(gc_data, aes(x = Virus, y = GC_Content, fill = Virus)) +
+  geom_text(aes(label = sprintf("%.2f%%", GC_Content)), vjust = -0.3, color = "black") +  # Añadir etiquetas de texto con el porcentaje
+  geom_bar(stat = "identity", color = "black") +
+  theme_minimal() +
+  labs(title = "Porcentaje de Contenido de GC por Virus",
+       x = "Virus", y = "Porcentaje de GC (%)") +
+  scale_fill_brewer(palette = "Set1")
+
+# Aplicar la función a cada secuencia en el objeto fasta
+nucleotide_frequencies <- lapply(fasta, calculate_nucleotide_frequencies)
+
+# Crear un dataframe único para todas las secuencias
+nucleotide_df <- do.call(rbind, nucleotide_frequencies)
+nucleotide_df$Virus <- rep(names(fasta), sapply(nucleotide_frequencies, nrow))
+
+# Ajustar nombres de columnas
+names(nucleotide_df) <- c("Nucleotide", "Frequency", "Virus")
+
+# Crear el gráfico de barras utilizando ggplot2
+ggplot(nucleotide_df, aes(x = Nucleotide, y = Frequency, fill = Nucleotide)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = Frequency), vjust = -0.3, color = "black") +  # Ajusta la posición vertical si es necesario
+  facet_wrap(~ Virus, scales = "free_y") +
+  theme_minimal() +
+  labs(title = "Frecuencia de Nucleótidos por Virus",
+       x = "Nucleótido", y = "Frecuencia") +
+  scale_fill_brewer(palette = "Set1")
+
+virus_seq_not_align <-
+  Biostrings::readDNAStringSet("virus_sequences.fasta", format = "fasta")
+
+
+virus_seq_not_align<-
+  DECIPHER::OrientNucleotides(virus_seq_not_align)
+virus_seq_align <- DECIPHER::AlignSeqs(virus_seq_not_align)
+DECIPHER::BrowseSeqs(virus_seq_align, highlight = 1)
+complementary_seqs <- reverseComplement(fasta)
+# Opcional: Guardar las secuencias complementarias en un archivo
+writeXStringSet(complementary_seqs, filepath = "complementary_virus_sequences.fasta", format = "fasta")
+writeXStringSet(virus_seq_align, filepath = "virus_seq_align.fasta", format = "fasta")
+
+
+
+#El estudio reveló un notable aumento en el contenido de GC en las variantes de la proteína 
+#de nucleocápside del SARS-CoV-2, con un promedio elevado del 59% comparado con el 
+#28% de la secuencia original de Wuhan, sugiriendo una mayor estabilidad térmica y 
+#estructural del ARN viral. Este patrón constante de alto contenido de GC, junto con un alto 
+#grado de similitud en las mutaciones observadas sugiere que estas variantes pueden 
+#haber evolucionado de una variante ancestral común, diferente a la cepa original debido a 
+#las significativas diferencias genéticas. Este alto nivel de GC pudo haber estabilizado estas 
+#mutaciónes, lo cual claramente ha sido muy favorable para el virus, ya que ha permanecido 
+#en todas las variantes observadas. Un estudio sugiere  que ciertas mutaciones en la #proteína de nucleocápside, como la R203K+G204R, presentes en las variantes alfa, 
+#gamma y ómicron, pueden aumentar la replicación viral y conferir una mayor resistencia a 
+#inhibidores(Rahman et al., 2020). Estas mutaciones podrían haber contribuido a la #estabilidad de la proteína de nucleocápside, facilitando una mejor adaptación del virus al 
+#ambiente pulmonar humano, como se observa en la correlación del uso de codones entre 
+#el SARS-CoV-2 y los genes humanos altamente expresados en los pulmones(Li et al., 
+#2020). Las variaciones en la longitud de las secuencias, que oscilan entre 716 y 1260 
+#nucleótidos, y la longitud de consenso de 941 nucleótidos, indican una diversificación 
+#genética que podría influir en la virulencia y transmisibilidad del virus. Esta cadena de 
+#consenso puede ser útil para identificar mutaciones clave y entender cómo estas pueden 
+#afectar la interacción del virus con el sistema inmunológico del huésped y la eficacia de los 
+#antivirales. Estos hallazgos destacan la importancia de la monitorización genómica #continua para comprender la evolución del virus y anticipar cambios que podrían impactar 
+#el desarrollo de estrategias terapéuticas y vacunas.
+
+#Referencias:
+#Rahman, M. S., Islam, M. R., Alam, A. S. M. R. U., Islam, I., Hoque, M. N., Akter, S., Rahaman, M. #M., Sultana, M., & Hossain, M. A. (2020). Evolutionary dynamics of SARS‐CoV‐2 nucleocapsid #protein and its consequences. Journal Of Medical Virology, 93(4), 2177-2195. #https://doi.org/10.1002/jmv.26626
+#Li, Y., Yang, X., Wang, N., Wang, H., Yin, B., Yang, X., & Jiang, W. (2020). GC usage of #SARS-CoV-2 genes might adapt to the environment of human lung expressed genes. Molecular #Genetics And Genomics, 295(6), 1537-1546. https://doi.org/10.1007/s00438-020-01719-0
+#Wu, W., Cheng, Y., Zhou, H. et al. The SARS-CoV-2 nucleocapsid protein: its #role in the viral life cycle, structure and functions, and use as a #potential target in the development of vaccines and diagnostics. Virol J 20, #6 (2023). https://doi.org/10.1186/s12985-023-01968-6
+
